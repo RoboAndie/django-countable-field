@@ -1,5 +1,6 @@
 # django-countable-field
 A simple django form field widget for a text field with a current word count.
+<img src="https://raw.githubusercontent.com/roboandie/django-countable-field/master/example.gif"/>
 
 ## Installation and usage
 1. Add "countable_field" to your INSTALLED_APPS setting like this:
