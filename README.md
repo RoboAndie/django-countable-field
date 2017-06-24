@@ -13,8 +13,8 @@ A simple django form field widget for a text field with a current word count.
 the minimum and maximum word count as additional parameters, such as:
 ```
     self.fields['essay_response'].widget = \
-                CountableWidget(attrs={'text_count_min': this.essay_min_length,
-                                       'text_count_max': this.essay_max_length})
+                CountableWidget(attrs={'data-min-count': this.essay_min_length,
+                                       'data-max-count': this.essay_max_length})
 ```
 The additional parameters are optional.
 

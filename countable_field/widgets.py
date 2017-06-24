@@ -13,17 +13,21 @@ class CountableWidget(widgets.Textarea):
 
     def render(self, name, value, attrs=None):
         final_attrs = self.build_attrs(attrs)
+        # to avoid xss, if the min or max attributes are not integers, set them to 'false'
+        if not isinstance(final_attrs.get('data-min-count'), int):
+            final_attrs['data-min-count'] = 'false'
+        if not isinstance(final_attrs.get('data-max-count'), int):
+            final_attrs['data-max-count'] = 'false'
         output = super(CountableWidget, self).render(name, value, final_attrs)
-        output += """<span class="text-count" id="%(id)s_counter" data-min-count="%(min_count)s"
-                  data-max-count="%(max_count)s">Word count: <span class="text-count-current">0</span></span>""" \
-                  % {'id': final_attrs.get('id'),
-                     'min_count': final_attrs.get('text_count_min' or 'false'),
-                     'max_count': final_attrs.get('text_count_max' or 'false')}
-        js = """
-        <script type="text/javascript">
-            var countableField = new CountableField("%(id)s")
-        </script>
-        """ % {'id': final_attrs.get('id')}
-        output += js
+        output += self.get_word_count_template(final_attrs)
         return mark_safe(output)
+
+    @staticmethod
+    def get_word_count_template(attrs):
+        return (
+                 '<span class="text-count" id="%(id)s_counter">Word count: '
+                 '<span class="text-count-current">0</span></span>\r\n'
+                 '<script type="text/javascript">var countableField = new CountableField("%(id)s")</script>\n'
+               ) % {'id': attrs.get('id')}
+
 

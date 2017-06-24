@@ -10,8 +10,8 @@ function CountableField(field_id) {
     var countDisplay = document.getElementById(field_id + "_counter");
     var minCount, maxCount;
     if (textarea != null && countDisplay != null) {
-        minCount = countDisplay.getAttribute("data-min-count");
-        maxCount = countDisplay.getAttribute("data-max-count");
+        minCount = textarea.getAttribute("data-min-count");
+        maxCount = textarea.getAttribute("data-max-count");
 
         Countable.live(textarea, updateFieldWordCount);
     }
