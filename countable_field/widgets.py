@@ -6,7 +6,10 @@ from django.utils.safestring import mark_safe
 class CountableWidget(widgets.Textarea):
     class Media:
         js = ('countable_field/js/scripts.js',)
-        css = ('countable_field/css/styles.css',)
+        css = {
+            'all':
+                ('countable_field/css/styles.css',)
+        }
 
     def render(self, name, value, attrs=None):
         final_attrs = self.build_attrs(attrs)
