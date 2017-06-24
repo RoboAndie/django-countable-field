@@ -3,14 +3,18 @@ A simple django form field widget for a text field with a current word count.
 <img src="https://raw.githubusercontent.com/roboandie/django-countable-field/master/example.gif"/>
 
 ## Installation and usage
-1. Add "countable_field" to your INSTALLED_APPS setting like this:
+1. Install with pip
+```
+pip install django-countable-field
+```
+2. Add "countable_field" to your INSTALLED_APPS setting like this:
 ```
     INSTALLED_APPS = [
         ...
         'countable_field',
     ]
 ```
-2. In the form, set the field's widget to be "CountableWidget", passing
+3. In the form, set the field's widget to be "CountableWidget", passing
 the minimum and maximum word count as additional parameters, such as:
 ```
     self.fields['essay_response'].widget = \
