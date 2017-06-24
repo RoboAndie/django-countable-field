@@ -3,43 +3,24 @@ from django.forms import widgets
 from django.utils.safestring import mark_safe
 
 
-class TextCountWidget(widgets.Textarea):
+class CountableWidget(widgets.Textarea):
     class Media:
-        js = (
-            'text_count_field/js/countable.js',
-        )
+        js = ('countable_field/js/scripts.js',)
+        css = ('countable_field/css/styles.css',)
 
     def render(self, name, value, attrs=None):
-        final_attrs = self.build_attrs(attrs, name=name)
+        final_attrs = self.build_attrs(attrs)
+        output = super(CountableWidget, self).render(name, value, final_attrs)
+        output += """<span class="text-count" id="%(id)s_counter" data-min-count="%(min_count)s"
+                  data-max-count="%(max_count)s">Word count: <span class="text-count-current">0</span></span>""" \
+                  % {'id': final_attrs.get('id'),
+                     'min_count': final_attrs.get('text_count_min' or 'false'),
+                     'max_count': final_attrs.get('text_count_max' or 'false')}
         js = """
         <script type="text/javascript">
-            var textarea = document.getElementById('%(id)s');
-            var countDisplay = document.getElementById('%(id)s_counter');
-            var minCount = %(minCount)s;
-            var maxCount = %(maxCount)s;
-            if (textarea != null && countDisplay != null) {
-                Countable.live(textarea, function (counter) {
-                    countDisplay.getElementsByClassName("text-count-current")[0].innerHTML = counter.words;
-                    if (minCount && counter.words < minCount)
-                        countDisplay.className = "text-count text-is-under-min";
-                    else if (maxCount && counter.words > maxCount)
-                        countDisplay.className = "text-count text-is-over-max";
-                    else
-                        countDisplay.className = "text-count";
-                })
-            }
+            var countableField = new CountableField("%(id)s")
         </script>
-        """
-        js = js % {'id': final_attrs.get('id'),
-                   'minCount': final_attrs.get('text_count_min') or 'false',
-                   'maxCount': final_attrs.get('text_count_max') or 'false'}
-        output = super(TextCountWidget, self).render(name, value, final_attrs)
-        output += self.get_word_count_template(final_attrs.get('id'))
+        """ % {'id': final_attrs.get('id')}
         output += js
         return mark_safe(output)
-
-    @staticmethod
-    def get_word_count_template(related_id):
-        return """<span class="text-count" id="%(id)s_counter">Word count:
-                  <span class="text-count-current">0</span></span>""" % {'id': related_id}
 

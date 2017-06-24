@@ -1,0 +1,9 @@
+.text-count {
+  float: right;
+  font-size: 80%;
+  color: #818a91;
+}
+.text-count.text-is-under-min,
+.text-count.text-is-over-max {
+  color: #d9534f;
+}

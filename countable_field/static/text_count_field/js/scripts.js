@@ -1,4 +1,35 @@
 /**
+ * Control-specific JavaScript for countable-field
+ * @author   Andrea Robertson (<https://github.com/RoboAndie>)
+ * @version  1.1.1
+ * @license  MIT
+ * @see      <https://github.com/RoboAndie/django-countable-field>
+ */
+function CountableField(field_id) {
+    var textarea = document.getElementById(field_id);
+    var countDisplay = document.getElementById(field_id + "_counter");
+    var minCount, maxCount;
+    if (textarea != null && countDisplay != null) {
+        minCount = countDisplay.getAttribute("data-min-count");
+        maxCount = countDisplay.getAttribute("data-max-count");
+
+        Countable.live(textarea, updateFieldWordCount);
+    }
+
+    function updateFieldWordCount(counter) {
+        countDisplay.getElementsByClassName("text-count-current")[0].innerHTML = counter.words;
+        if (minCount && counter.words < minCount)
+            countDisplay.className = "text-count text-is-under-min";
+        else if (maxCount && counter.words > maxCount)
+            countDisplay.className = "text-count text-is-over-max";
+        else
+            countDisplay.className = "text-count";
+    }
+}
+
+
+
+/**
  * Countable is a script to allow for live paragraph-, word- and character-
  * counting on an HTML element.
  *
