@@ -27,6 +27,14 @@ The additional parameters are optional. `data-min-count` and `data-max-count` mu
 `data-count` indicates what kind of text to count, and can be one of the following: `'words'` (default),
 `'characters'`, `'paragraphs'`, or `'sentences'`.
 
+Additional parameters:
+Attribute              | Options
+---------------------- | -------
+`data-count`           | The type of text to be counted. Options are `'words'` (default), `'characters'`, `'paragraphs'`, or `'sentences'`.
+`data-min-count`       | The minimum of the text count type that is required for this field. Must be an integer.
+`data-max-count`       | The maximum of the text count type that is allowed for this field. Must be an integer that is larger than the `data-min-count` (if set).
+`data-count-direction` | Whether the counter displays the current count or the allowed remaining count. Options are `'up'` (default) or `'down'`. Set to to `'down'` to display the allowed text remaining.
+
 To run the example project, run the server using the settings file in the example_project module.
 ```
 python manage.py runserver --settings=example_project.settings

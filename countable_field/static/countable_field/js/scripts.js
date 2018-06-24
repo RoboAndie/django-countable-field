@@ -7,24 +7,35 @@
  */
 (function() {
     function CountableField(textarea) {
-        // var textarea = document.getElementById(field_id);
         var countDisplay = document.getElementById(textarea.id + "_counter");
-        var allowedTypes = ["words", "paragraphs", "characters", "sentences"];
+        var allowedTypes = ["words", "paragraphs", "characters", "sentences", "all"];
+        var countDown = false;
         var minCount, maxCount, countType;
         if (textarea != null && countDisplay != null) {
             minCount = textarea.getAttribute("data-min-count");
             maxCount = textarea.getAttribute("data-max-count");
             countType = textarea.getAttribute("data-count");
+            if (textarea.getAttribute("data-count-direction") === "down"){
+                countDown = true;
+                if (!maxCount > 0)
+                    maxCount = 0;
+            }
+
             if (!countType || allowedTypes.indexOf(countType) < 0)
                 countType = "words";
+            else if (countType === "characters")
+                countType = "all"; // all includes spaces, but characters does not
 
             Countable.on(textarea, updateFieldWordCount);
         }
 
         function updateFieldWordCount(counter) {
             var count;
-
-            countDisplay.getElementsByClassName("text-count-current")[0].innerHTML = counter[countType];
+            if (countDown)
+                count = maxCount - counter[countType];
+            else
+                count = counter[countType];
+            countDisplay.getElementsByClassName("text-count-current")[0].innerHTML = count;
             if (minCount && counter[countType] < minCount)
                 countDisplay.className = "text-count text-is-under-min";
             else if (maxCount && counter[countType] > maxCount)

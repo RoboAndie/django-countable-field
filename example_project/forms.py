@@ -14,7 +14,8 @@ class CountableTestForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super(CountableTestForm, self).__init__(*args, **kwargs)
         self.fields['char_count_field'].widget = CountableWidget(attrs={'data-max-count': 160,
-                                                                        'data-count': 'characters'})
+                                                                        'data-count': 'characters',
+                                                                        'data-count-direction': 'down'})
         self.fields['char_count_field'].help_text = "Type up to 160 characters"
         self.fields['word_count_field'].widget = CountableWidget(attrs={'data-min-count': 100,
                                                                         'data-max-count': 200})
