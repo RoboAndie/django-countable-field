@@ -28,6 +28,7 @@ The additional parameters are optional. `data-min-count` and `data-max-count` mu
 `'characters'`, `'paragraphs'`, or `'sentences'`.
 
 Additional parameters:
+
 Attribute              | Options
 ---------------------- | -------
 `data-count`           | The type of text to be counted. Options are `'words'` (default), `'characters'`, `'paragraphs'`, or `'sentences'`.
