@@ -5,36 +5,46 @@
  * @license  MIT
  * @see      <https://github.com/RoboAndie/django-countable-field>
  */
-function CountableField(field_id) {
-    var textarea = document.getElementById(field_id);
-    var countDisplay = document.getElementById(field_id + "_counter");
-    var minCount, maxCount;
-    if (textarea != null && countDisplay != null) {
-        minCount = textarea.getAttribute("data-min-count");
-        maxCount = textarea.getAttribute("data-max-count");
+(function() {
+    function CountableField(textarea) {
+        // var textarea = document.getElementById(field_id);
+        var countDisplay = document.getElementById(textarea.id + "_counter");
+        var allowedTypes = ["words", "paragraphs", "characters", "sentences"];
+        var minCount, maxCount, countType;
+        if (textarea != null && countDisplay != null) {
+            minCount = textarea.getAttribute("data-min-count");
+            maxCount = textarea.getAttribute("data-max-count");
+            countType = textarea.getAttribute("data-count");
+            if (!countType || allowedTypes.indexOf(countType) < 0)
+                countType = "words";
 
-        Countable.live(textarea, updateFieldWordCount);
+            Countable.on(textarea, updateFieldWordCount);
+        }
+
+        function updateFieldWordCount(counter) {
+            var count;
+
+            countDisplay.getElementsByClassName("text-count-current")[0].innerHTML = counter[countType];
+            if (minCount && counter[countType] < minCount)
+                countDisplay.className = "text-count text-is-under-min";
+            else if (maxCount && counter[countType] > maxCount)
+                countDisplay.className = "text-count text-is-over-max";
+            else
+                countDisplay.className = "text-count";
+        }
     }
 
-    function updateFieldWordCount(counter) {
-        countDisplay.getElementsByClassName("text-count-current")[0].innerHTML = counter.words;
-        if (minCount && counter.words < minCount)
-            countDisplay.className = "text-count text-is-under-min";
-        else if (maxCount && counter.words > maxCount)
-            countDisplay.className = "text-count text-is-over-max";
-        else
-            countDisplay.className = "text-count";
-    }
-}
-
-
+    document.addEventListener('DOMContentLoaded', function(e) {
+        ;[].forEach.call(document.querySelectorAll('[data-count]'), CountableField)
+    })
+})()
 
 /**
  * Countable is a script to allow for live paragraph-, word- and character-
  * counting on an HTML element.
  *
  * @author   Sacha Schmid (<https://github.com/RadLikeWhoa>)
- * @version  2.1.1
+ * @version  3.0.1
  * @license  MIT
  * @see      <http://radlikewhoa.github.io/Countable/>
  */
@@ -45,49 +55,16 @@ function CountableField(field_id) {
  */
 
 ;(function (global) {
-  'use strict'
 
   /**
    * @private
    *
-   * `_liveElements` holds all elements that have the live-counting
+   * `liveElements` holds all elements that have the live-counting
    * functionality bound to them.
-   *
-   * `_event` holds the event to handle the live counting, based on the
-   * browser's capabilities.
    */
 
-  var _liveElements = [],
-      _event = 'oninput' in document ? 'input' : 'keyup'
-
-  /**
-   * IE9 is a special case. It does not fire an 'input' event when
-   * characters are deleted (via DEL key, BACKSPACE key, and CUT).
-   * If we want support for those actions we need to use the 'keyup'
-   * event instead.
-   * more info: http://www.matts411.com/post/internet-explorer-9-oninput/
-   */
-
-  if (navigator.userAgent.match(/MSIE 9.0/)) {
-    _event = 'keyup'
-  }
-
-  /**
-   * `String.trim()` polyfill for non-supporting browsers. This is the
-   * recommended polyfill on MDN.
-   *
-   * @see     <http://goo.gl/uYveB>
-   * @see     <http://goo.gl/xjIxJ>
-   *
-   * @return  {String}  The original string with leading and trailing
-   *                    whitespace removed.
-   */
-
-  if (!String.prototype.trim) {
-    String.prototype.trim = function () {
-      return this.replace(/^\s+|\s+$/g, '')
-    }
-  }
+  let liveElements = []
+  const each = Array.prototype.forEach
 
   /**
    * `ucs2decode` function from the punycode.js library.
@@ -106,118 +83,82 @@ function CountableField(field_id) {
    * @return  {Array}   The new array of code points.
    */
 
-  function _decode (string) {
-    var output = [],
-        counter = 0,
-        length = string.length,
-        value, extra
+  function decode (string) {
+    const output = []
+  	let counter = 0
+  	const length = string.length
 
-    while (counter < length) {
-      value = string.charCodeAt(counter++)
+  	while (counter < length) {
+  		const value = string.charCodeAt(counter++)
 
-      if (value >= 0xD800 && value <= 0xDBFF && counter < length) {
-        // High surrogate, and there is a next character.
-        extra = string.charCodeAt(counter++)
+  		if (value >= 0xD800 && value <= 0xDBFF && counter < length) {
 
-        if ((extra & 0xFC00) == 0xDC00) {
-          // Low surrogate.
-          output.push(((value & 0x3FF) << 10) + (extra & 0x3FF) + 0x10000)
-        } else {
-          // unmatched surrogate; only append this code unit, in case the next
-          // code unit is the high surrogate of a surrogate pair
-          output.push(value, extra)
-          counter--
-        }
-      } else {
-        output.push(value)
-      }
-    }
+  			// It's a high surrogate, and there is a next character.
 
-    return output
+  			const extra = string.charCodeAt(counter++)
+
+  			if ((extra & 0xFC00) == 0xDC00) { // Low surrogate.
+  				output.push(((value & 0x3FF) << 10) + (extra & 0x3FF) + 0x10000)
+  			} else {
+
+  				// It's an unmatched surrogate; only append this code unit, in case the
+  				// next code unit is the high surrogate of a surrogate pair.
+
+  				output.push(value)
+  				counter--
+  			}
+  		} else {
+  			output.push(value)
+  		}
+  	}
+
+  	return output
   }
 
   /**
-   * `_validateArguments` validates the arguments given to each function call.
+   * `validateArguments` validates the arguments given to each function call.
    * Errors are logged to the console as warnings, but Countable fails
    * silently.
    *
    * @private
    *
-   * @param   {Nodes}     elements  The (collection of) element(s) to
-   *                                validate.
+   * @param   {Nodes|String}  targets   A (collection of) element(s) or a single
+	 *                                    string to validate.
    *
-   * @param   {Function}  callback  The callback function to validate.
+   * @param   {Function}      callback  The callback function to validate.
    *
-   * @return  {Boolean}   Returns whether all arguments are vaild.
+   * @return  {Boolean}       Returns whether all arguments are vaild.
    */
 
-  function _validateArguments (elements, callback) {
-    var nodes = Object.prototype.toString.call(elements),
-        elementsValid = elements && (((nodes === '[object NodeList]' || nodes === '[object HTMLCollection]') && elements.length) || (elements.nodeType === 1)),
-        callbackValid = callback && typeof callback === 'function'
+  function validateArguments (targets, callback) {
+    const nodes = Object.prototype.toString.call(targets)
+    const targetsValid = typeof targets === 'string' || ((nodes === '[object NodeList]' || nodes === '[object HTMLCollection]') || targets.nodeType === 1)
+    const callbackValid = typeof callback === 'function'
 
-    if ('console' in window && 'warn' in console) {
-      if (!elementsValid) console.warn('Countable: No valid elements were found')
-      if (!callbackValid) console.warn('Countable: "' + callback + '" is not a valid callback function')
-    }
+    if (!targetsValid) console.error('Countable: Not a valid target')
+    if (!callbackValid) console.error('Countable: Not a valid callback function')
 
-    return elementsValid && callbackValid
+    return targetsValid && callbackValid
   }
 
   /**
-   * `_extendDefaults` is a function to extend a set of default options with
-   * the ones given in the function call. Available options are described
-   * below.
-   *
-   * {Boolean}  hardReturns      Use two returns to seperate a paragraph
-   *                             instead of one.
-   * {Boolean}  stripTags        Strip HTML tags before counting the values.
-   * {Boolean}  ignoreReturns    Ignore returns when calculating the `all`
-   *                             property.
-   * {Boolean}  ignoreZeroWidth  Ignore zero-width space characters.
-   *
-   * @private
-   *
-   * @param   {Object}  options  Countable allows the options described above.
-   *                             They can be used in a function call to
-   *                             override the default behaviour.
-   *
-   * @return  {Object}  The new options object.
-   */
-
-  function _extendDefaults (options) {
-    var defaults = {
-      hardReturns: false,
-      stripTags: false,
-      ignoreReturns: false,
-      ignoreZeroWidth: true
-    }
-
-    for (var prop in options) {
-      if (defaults.hasOwnProperty(prop)) defaults[prop] = options[prop]
-    }
-
-    return defaults
-  }
-
-  /**
-   * `_count` trims an element's value, optionally strips HTML tags and counts
+   * `count` trims an element's value, optionally strips HTML tags and counts
    * paragraphs, sentences, words, characters and characters plus spaces.
    *
    * @private
    *
-   * @param   {Element}  element  The element whose value is to be counted.
+   * @param   {Node|String}  target   The target for the count.
    *
-   * @param   {Object}   options  The options to use for the counting.
+   * @param   {Object}   	   options  The options to use for the counting.
    *
-   * @return  {Object}   The object containing the number of paragraphs,
-   *                     sentences, words, characters and characters plus
-   *                     spaces.
+   * @return  {Object}       The object containing the number of paragraphs,
+   *                         sentences, words, characters and characters
+	 *                         plus spaces.
    */
 
-  function _count (element, options) {
-    var original = '' + ('value' in element ? element.value : element.innerText || element.textContent),
-        trimmed
+  function count (target, options) {
+    let original = '' + (typeof target === 'string' ? target : ('value' in target ? target.value : target.textContent))
+    options = options || {}
 
     /**
      * The initial implementation to allow for HTML tags stripping was created
@@ -228,9 +169,14 @@ function CountableField(field_id) {
      */
 
     if (options.stripTags) original = original.replace(/<\/?[a-z][^>]*>/gi, '')
-    if (options.ignoreZeroWidth) original = original.replace(/[\u200B]+/, '')
 
-    trimmed = original.trim()
+    if (options.ignore) {
+        each.call(options.ignore, function (i) {
+            original = original.replace(i, '')
+        })
+    }
+
+    const trimmed = original.trim()
 
     /**
      * Most of the performance improvements are based on the works of @epmatsw.
@@ -242,33 +188,8 @@ function CountableField(field_id) {
       paragraphs: trimmed ? (trimmed.match(options.hardReturns ? /\n{2,}/g : /\n+/g) || []).length + 1 : 0,
       sentences: trimmed ? (trimmed.match(/[.?!…]+./g) || []).length + 1 : 0,
       words: trimmed ? (trimmed.replace(/['";:,.?¿\-!¡]+/g, '').match(/\S+/g) || []).length : 0,
-      characters: trimmed ? _decode(trimmed.replace(/\s/g, '')).length : 0,
-      all: _decode(options.ignoreReturns ? original.replace(/[\n\r]/g, '') : original).length
-    }
-  }
-
-  /**
-   * `_loop` is a helper function to iterate over a collection, e.g. a NodeList
-   * or an Array. The callback receives the current element as the single
-   * parameter.
-   *
-   * @private
-   *
-   * @param  {Array}     which     The collection to iterate over.
-   *
-   * @param  {Function}  callback  The callback function to call on each
-   *                               iteration.
-   */
-
-  function _loop (which, callback) {
-    var len = which.length
-
-    if (typeof len !== 'undefined') {
-      while (len--) {
-        callback(which[len])
-      }
-    } else {
-      callback(which)
+      characters: trimmed ? decode(trimmed.replace(/\s/g, '')).length : 0,
+      all: decode(original).length
     }
   }
 
@@ -276,12 +197,23 @@ function CountableField(field_id) {
    * This is the main object that will later be exposed to other scripts. It
    * holds all the public methods that can be used to enable the Countable
    * functionality.
+   *
+   * Some methods accept an optional options parameter. This includes the
+   * following options.
+   *
+   * {Boolean}      hardReturns  Use two returns to seperate a paragraph
+   *                             instead of one. (default: false)
+   * {Boolean}      stripTags    Strip HTML tags before counting the values.
+   *                             (default: false)
+   * {Array<Char>}  ignore       A list of characters that should be removed
+   *                             ignored when calculating the counters.
+   *                             (default: )
    */
 
-  var Countable = {
+  const Countable = {
 
     /**
-     * The `live` method binds the counting handler to all given elements. The
+     * The `on` method binds the counting handler to all given elements. The
      * event is either `oninput` or `onkeydown`, based on the capabilities of
      * the browser.
      *
@@ -295,131 +227,114 @@ function CountableField(field_id) {
      *                                 single parameter.
      *
      * @param   {Object}    [options]  An object to modify Countable's
-     *                                 behaviour. Refer to `_extendDefaults`
-     *                                 for a list of available options.
+     *                                 behaviour.
      *
      * @return  {Object}    Returns the Countable object to allow for chaining.
      */
 
-    live: function (elements, callback, options) {
-      var ops = _extendDefaults(options),
-          bind = function (element) {
-            var handler = function () {
-                  callback.call(element, _count(element, ops))
-                }
+    on: function (elements, callback, options) {
+      if (!validateArguments(elements, callback)) return
 
-            _liveElements.push({ element: element, handler: handler })
+      if (!Array.isArray(elements)) {
+          elements = [ elements ]
+      }
 
-            handler()
-
-            if (element.addEventListener) {
-              element.addEventListener(_event, handler, false)
-            } else if (element.attachEvent) {
-              element.attachEvent('on' + _event, handler)
-            }
+      each.call(elements, function (e) {
+          const handler = function () {
+            callback.call(e, count(e, options))
           }
 
-      if (!_validateArguments(elements, callback)) return
+          liveElements.push({ element: e, handler: handler })
 
-      if (elements.length) {
-        _loop(elements, bind)
-      } else {
-        bind(elements)
-      }
+          handler()
+
+          e.addEventListener('input', handler)
+      })
 
       return this
     },
 
     /**
-     * The `die` method removes the Countable functionality from all given
+     * The `off` method removes the Countable functionality from all given
      * elements.
      *
-     * @param   {Nodes}  elements  All elements whose Countable functionality
-     *                             should be unbound.
+     * @param   {Nodes}   elements  All elements whose Countable functionality
+     *                              should be unbound.
      *
      * @return  {Object}  Returns the Countable object to allow for chaining.
      */
 
-    die: function (elements) {
-      if (!_validateArguments(elements, function () {})) return
+    off: function (elements) {
+      if (!validateArguments(elements, function () {})) return
 
-      _loop(elements, function (element) {
-        var liveElement
+      if (!Array.isArray(elements)) {
+          elements = [ elements ]
+      }
 
-        _loop(_liveElements, function (live) {
-          if (live.element === element) liveElement = live
-        })
+      liveElements.filter(function (e) {
+          return elements.indexOf(e.element) !== -1
+      }).forEach(function (e) {
+          e.element.removeEventListener('input', e.handler)
+      })
 
-        if (!liveElement) return
-
-        if (element.removeEventListener) {
-          element.removeEventListener(_event, liveElement.handler, false)
-        } else if (element.detachEvent) {
-          element.detachEvent('on' + _event, liveElement.handler)
-        }
-
-        _liveElements.splice(_liveElements.indexOf(liveElement), 1)
+      liveElements = liveElements.filter(function (e) {
+          return elements.indexOf(e.element) === -1
       })
 
       return this
     },
 
     /**
-     * The `once` method works mostly like the `live` method, but no events are
+     * The `count` method works mostly like the `live` method, but no events are
      * bound, the functionality is only executed once.
      *
-     * @alias   Countable.count
+     * @param   {Nodes|String}  targets   All elements that should be counted.
      *
-     * @param   {Nodes}     elements   All elements that should receive the
-     *                                 Countable functionality.
+     * @param   {Function}      callback   The callback to fire whenever the
+     *                                     element's value changes. The callback
+		 *                                     is called with the relevant element
+		 *                                     bound to `this` and the counted values
+		 *                                     as the single parameter.
      *
-     * @param   {Function}  callback   The callback to fire whenever the
-     *                                 element's value changes. The callback is
-     *                                 called with the relevant element bound
-     *                                 to `this` and the counted values as the
-     *                                 single parameter.
-     *
-     * @param   {Object}    [options]  An object to modify Countable's
-     *                                 behaviour. Refer to `_extendDefaults`
-     *                                 for a list of available options.
+     * @param   {Object}        [options]  An object to modify Countable's
+     *                                     behaviour.
      *
      * @return  {Object}    Returns the Countable object to allow for chaining.
      */
 
-    once: function (elements, callback, options) {
-      if (!_validateArguments(elements, callback)) return
+    count: function (targets, callback, options) {
+      if (!validateArguments(targets, callback)) return
 
-      _loop(elements, function (element) {
-        callback.call(element, _count(element, _extendDefaults(options)))
+      if (!Array.isArray(targets)) {
+          targets = [ targets ]
+      }
+
+      each.call(targets, function (e) {
+          callback.call(e, count(e, options))
       })
 
       return this
-    },
-
-    count: function (elements, callback, options) {
-      return this.once(elements, callback, options)
     },
 
     /**
      * The `enabled` method checks if the live-counting functionality is bound
      * to an element.
      *
-     * @param   {Element}  element  A single Element.
+     * @param   {Node}     element  All elements that should be checked for the
+     *                              Countable functionality.
      *
      * @return  {Boolean}  A boolean value representing whether Countable
-     *                     functionality is bound to the given element.
+     *                     functionality is bound to all given elements.
      */
 
-    enabled: function (element) {
-      var isEnabled = false
-
-      if (element && element.nodeType === 1) {
-        _loop(_liveElements, function (live) {
-          if (live.element === element) isEnabled = true
-        })
+    enabled: function (elements) {
+      if (elements.length === undefined) {
+        elements = [ elements ]
       }
 
-      return isEnabled
+      return liveElements.filter(function (e) {
+          return elements.indexOf(e.element) !== -1
+      }).length === elements.length
     }
 
   }
