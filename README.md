@@ -23,7 +23,9 @@ the count type, minimum and maximum word count as additional parameters, such as
                                        'data-min-count': this.essay_min_length,
                                        'data-max-count': this.essay_max_length})
 ```
-The additional parameters are optional. `data-min-count` and `data-max-count` must be integers. 
+4. Include `{{ form.media }}` in your template to render the JavaScript where `form` is the name of your form context variable. If you use the [Crispy Forms](https://github.com/django-crispy-forms/django-crispy-forms) app you can skip this step - it will take care of the media element for you.
+
+The following additional parameters are optional. `data-min-count` and `data-max-count` must be integers. 
 `data-count` indicates what kind of text to count, and can be one of the following: `'words'` (default),
 `'characters'`, `'paragraphs'`, or `'sentences'`.
 
@@ -40,6 +42,8 @@ To run the example project, run the server using the settings file in the exampl
 ```
 python manage.py runserver --settings=example_project.settings
 ```
+
+I wrote a blog post to explain how I made this app. Check it out here: https://andrearobertson.com/2017/06/17/django-example-creating-a-custom-form-field-widget/
 
 ## Credit
 This project makes use of the Countable.js library courtesy of Sacha Schmid. https://sacha.me/Countable/
