@@ -7,19 +7,19 @@ class WidgetTestCase(TestCase):
     def test_no_limits(self):
         widget = widgets.CountableWidget()
         result = widget.render('countable', None)
-        self.assertTrue(str(result).__contains__('data-min-count="false"'))
-        self.assertTrue(str(result).__contains__('data-max-count="false"'))
+        self.assertFalse(str(result).__contains__('data-min-count'))
+        self.assertFalse(str(result).__contains__('data-max-count'))
 
     def test_lower_limit(self):
         widget = widgets.CountableWidget()
         result = widget.render('countable', None, attrs={'data-min-count': 50})
         self.assertTrue(str(result).__contains__('data-min-count="50"'))
-        self.assertTrue(str(result).__contains__('data-max-count="false"'))
+        self.assertFalse(str(result).__contains__('data-max-count'))
 
     def test_upper_limit(self):
         widget = widgets.CountableWidget()
         result = widget.render('countable', None, attrs={'data-max-count': 70})
-        self.assertTrue(str(result).__contains__('data-min-count="false"'))
+        self.assertFalse(str(result).__contains__('data-min-count'))
         self.assertTrue(str(result).__contains__('data-max-count="70"'))
 
     def test_both_limits(self):
@@ -31,5 +31,5 @@ class WidgetTestCase(TestCase):
     def test_invalid_limits(self):
         widget = widgets.CountableWidget()
         result = widget.render('countable', None, attrs={'data-min-count': 'blue', 'data-max-count': 50.9})
-        self.assertTrue(str(result).__contains__('data-min-count="false"'))
-        self.assertTrue(str(result).__contains__('data-max-count="false"'))
+        self.assertFalse(str(result).__contains__('data-min-count'))
+        self.assertFalse(str(result).__contains__('data-max-count'))
