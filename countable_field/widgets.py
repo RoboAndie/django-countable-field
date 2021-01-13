@@ -3,7 +3,7 @@ from django.forms import widgets
 from django.utils.safestring import mark_safe
 
 
-class CountableWidget(widgets.Textarea):
+class CountableField:
     class Media:
         js = ('countable_field/js/scripts.js',)
         css = {
@@ -26,9 +26,9 @@ class CountableWidget(widgets.Textarea):
             final_attrs['data-count'] = 'words'
 
         if VERSION[:2] >= (1, 11):
-            output = super(CountableWidget, self).render(name, value, final_attrs, **kwargs)
+            output = super(CountableField, self).render(name, value, final_attrs, **kwargs)
         else:
-            output = super(CountableWidget, self).render(name, value, final_attrs)
+            output = super(CountableField, self).render(name, value, final_attrs)
         output += self.get_word_count_template(final_attrs)
         return mark_safe(output)
 
@@ -55,10 +55,19 @@ class CountableWidget(widgets.Textarea):
             elif count_type == "sentences":
                 count_label = "Sentence count: "
         return (
-                 '<span class="text-count" id="%(id)s_counter">%(label)s'
-                 '<span class="text-count-current">%(number)s</span></span>\r\n'
+                   '<span class="text-count" id="%(id)s_counter">%(label)s'
+                   '<span class="text-count-current">%(number)s</span></span>\r\n'
                ) % {'label': count_label,
                     'id': attrs.get('id'),
                     'number': max_count if count_direction == 'down' else '0'}
 
 
+class CountableTextarea(CountableField, widgets.Textarea):
+    pass
+
+
+class CountableTextInput(CountableField, widgets.TextInput):
+    pass
+
+
+CountableWidget = CountableTextarea

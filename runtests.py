@@ -11,6 +11,12 @@ settings.configure(
         'tests',
         'countable_field'
     ),
+    DATABASES={
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': 'mydatabase',
+        }
+    }
 )
 
 if hasattr(django, 'setup'):
